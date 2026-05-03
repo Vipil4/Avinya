@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: avinya-proxy
+    env: python
+    buildCommand: ""
+    startCommand: python avinya_server.py
+    envVars:
+      - key: ANTHROPIC_KEY
+        sync: false        # Set manually in Render dashboard
+      - key: PORT
+        value: "3000"
