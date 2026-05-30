@@ -10517,13 +10517,39 @@ async function crowdShareDoc() {
     localStorage.setItem(CROWD_LOCAL_KEY, JSON.stringify([entry, ...loc].slice(0, 30)));
   } catch(_) {}
 
-  // 2. Save to local library — always succeeds
-  // Cross-cohort sharing via Export (⬇) / Import (⬆) JSON buttons
-  let sharedOk = true;
+  // 2. Push to Google Apps Script (always-on, no proxy needed)
+  let sharedOk = false;
+  const _dbgEl = document.getElementById('crowd-debug');
+  function _dbg(msg) { if(_dbgEl){ _dbgEl.style.display='block'; _dbgEl.textContent += msg+'\n'; } }
+  if (_dbgEl) { _dbgEl.textContent = ''; _dbgEl.style.display = 'block'; }
 
-    showToast('Saved! Use Export to share with cohort.');
-  const _dbg2 = document.getElementById('crowd-debug');
-  if (_dbg2) { _dbg2.style.display='none'; }
+  const gasUrl = localStorage.getItem(CROWD_GAS_KEY) || CROWD_GAS_DEFAULT;
+  _dbg('GAS URL: ' + gasUrl.slice(0, 60) + '...');
+
+  if (!gasUrl) {
+    _dbg('No GAS URL - open Sync to add one');
+  } else {
+    try {
+      const resp = await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'add', entry: entry })
+      });
+      _dbg('Status: ' + resp.status);
+      const data = await resp.json().catch(function(){ return {}; });
+      _dbg('Response: ' + JSON.stringify(data).slice(0, 100));
+      sharedOk = data.ok === true;
+    } catch(e) {
+      _dbg('Error: ' + e.message);
+    }
+  }
+
+  if (shareBtn) { shareBtn.textContent = 'Share \u2191'; shareBtn.disabled = false; }
+  if (titleEl)  titleEl.value = '';
+  const _bar = document.getElementById('crowd-share-bar');
+  if (_bar) _bar.style.display = 'none';
+
+  showToast(sharedOk ? 'Shared with cohort!' : 'Saved locally (check debug panel)');
   crowdLoadLibrary();
 }
 
@@ -10710,6 +10736,9 @@ function crowdImport(event) {
   <div class="mob-tab" id="mtab-study" onclick="show('study')">
     <span class="mob-icon">📚</span><span>Study</span>
   </div>
+  <div class="mob-tab" id="mtab-perf" onclick="show('perf')">
+    <span class="mob-icon">📊</span><span>Stats</span>
+  </div>
   <div class="mob-tab" id="mtab-cases" onclick="show('cases')">
     <span class="mob-icon">📋</span><span>Cases</span>
   </div>
@@ -10727,9 +10756,6 @@ function crowdImport(event) {
   </div>
   <div class="mob-tab" id="mtab-search" onclick="show('search')">
     <span class="mob-icon">🔍</span><span>Search</span>
-  </div>
-  <div class="mob-tab" id="mtab-perf" onclick="show('perf')">
-    <span class="mob-icon">📊</span><span>Stats</span>
   </div>
 </nav>
 
