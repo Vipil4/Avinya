@@ -618,7 +618,8 @@ select.pf-inp{cursor:pointer;-webkit-appearance:none;appearance:none;background-
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js" onerror="loadTFfallback()"></script>
+<script>function loadTFfallback(){var s=document.createElement("script");s.src="https://unpkg.com/@tensorflow/tfjs@4.20.0/dist/tf.min.js";s.onerror=function(){console.warn("[Avinya] TF.js unavailable");window._tfFallback=true;};document.head.appendChild(s);}</script>
 </head>
 <body>
 
@@ -9888,14 +9889,17 @@ async function renderNNInsights() {
   const el = document.getElementById("nn-insights");
   if (!el) return;
   if (!window.tf) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--c3)">TensorFlow.js loading... refresh if this persists.</div>';
+    // TF.js not loaded - use pure JS weakness analysis as fallback
+    renderNNInsightsFallback(el);
     return;
   }
   const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || "[]");
-  if (hist.length < 5) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--c3)">Take at least 5 quizzes to train the neural network predictor.</div>';
+  if (hist.length < 2) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--c3)">Take at least 2 quizzes to see weakness predictions.</div>';
     return;
   }
+  // Show JS fallback immediately, replace with NN when trained
+  if (!_nnTrained) { renderNNInsightsFallback(el); nnTrain().then(function(){ if(_nnTrained) renderNNInsights(); }); return; }
   el.innerHTML = '<div style="font-size:12px;color:var(--c3)">Training neural network on your quiz history...</div>';
   try {
     const weak = await nnGetWeakSubjects(5);
@@ -10724,6 +10728,60 @@ function crowdImport(event) {
   };
   reader.readAsText(file);
 }
+
+// ── Pure-JS weakness predictor (runs when TF.js is unavailable) ──────────
+function renderNNInsightsFallback(el) {
+  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]');
+  if (hist.length < 1) { el.innerHTML = '<div style="font-size:12px;color:var(--c3)">Take a quiz to see weakness predictions.</div>'; return; }
+
+  // Aggregate scores per subject
+  const subMap = {};
+  hist.forEach(function(h) {
+    const s = h.sub || 'General';
+    if (!subMap[s]) subMap[s] = { scores:[], total:0, correct:0 };
+    subMap[s].scores.push(h.pct || 0);
+    subMap[s].total   += (h.total   || 5);
+    subMap[s].correct += (h.correct || 0);
+  });
+
+  // Score each subject: weighted average with recency bias
+  const subjects = Object.keys(subMap).map(function(sub) {
+    const d = subMap[sub];
+    const n = d.scores.length;
+    // Weighted mean — recent scores count more
+    let wSum = 0, wTotal = 0;
+    d.scores.forEach(function(sc, i) {
+      const w = i + 1;
+      wSum   += sc * w;
+      wTotal += w;
+    });
+    const score = wTotal > 0 ? wSum / wTotal : 0;
+    return { sub: sub, score: Math.round(score), attempts: n };
+  }).sort(function(a,b){ return a.score - b.score; });
+
+  const weak    = subjects.slice(0, 3);
+  const strong  = subjects.slice(-2).reverse();
+
+  const barColor = function(s) {
+    return s < 50 ? 'var(--red,#ef4444)' : s < 70 ? 'var(--gold,#f59e0b)' : 'var(--green,#22c55e)';
+  };
+
+  el.innerHTML =
+    '<div style="font-size:11px;font-weight:700;color:var(--c3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">AI Weakness Prediction</div>' +
+    weak.map(function(s) {
+      return '<div style="margin-bottom:6px">'
+        + '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">'
+        + '<span style="color:var(--c1)">' + s.sub + '</span>'
+        + '<span style="color:var(--c3)">' + s.score + '%</span></div>'
+        + '<div style="height:5px;border-radius:3px;background:var(--c6)">'
+        + '<div style="height:100%;width:' + s.score + '%;border-radius:3px;background:' + barColor(s.score) + ';transition:width .4s"></div>'
+        + '</div></div>';
+    }).join('') +
+    (strong.length ? '<div style="font-size:10px;color:var(--c3);margin-top:8px">Strong: ' +
+      strong.map(function(s){ return s.sub + ' (' + s.score + '%)'; }).join(', ') + '</div>' : '') +
+    '<div style="font-size:9px;color:var(--c4);margin-top:4px">JS predictor (TF.js loading...)</div>';
+}
+
 </script>
 
 <!-- ── Mobile bottom tab bar ── -->
