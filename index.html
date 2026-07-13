@@ -618,8 +618,8 @@ select.pf-inp{cursor:pointer;-webkit-appearance:none;appearance:none;background-
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js" onerror="loadTFfallback()"></script>
 <script>function loadTFfallback(){var s=document.createElement("script");s.src="https://unpkg.com/@tensorflow/tfjs@4.20.0/dist/tf.min.js";s.onerror=function(){console.warn("[Avinya] TF.js unavailable");window._tfFallback=true;};document.head.appendChild(s);}</script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js" onerror="loadTFfallback()"></script>
 </head>
 <body>
 
@@ -654,7 +654,7 @@ select.pf-inp{cursor:pointer;-webkit-appearance:none;appearance:none;background-
 
 <!-- NAV -->
 <nav class="nav">
-  <div class="brand" id="tab-dashboard" onclick="show('dashboard')")>
+  <div class="brand" id="brand-home" onclick="show('dashboard')">
     <div class="brand-badge">A</div>
     <div><div class="brand-name">Avinya</div><div class="brand-inst">IIT Roorkee · eMBA</div></div>
   </div>
@@ -2557,7 +2557,7 @@ function addMsgWithTrace(chatId, reply, agents, elapsed) {
   const wrap = document.createElement('div');
   wrap.className = 'chat-row';
   wrap.innerHTML = `<div class="msg msg-a quality-content">${badge}<div>${
-    reply ? reply.replace(/\n/g, '<br>') : '⚠️ No response received.'
+    reply ? escapeHtml(reply).replace(/\n/g, '<br>') : '⚠️ No response received.'
   }</div></div>`;
   el.appendChild(wrap);
   el.scrollTop = el.scrollHeight;
@@ -2846,13 +2846,13 @@ Be specific. Reference the student's actual profile above, not generic assumptio
   }
   document.getElementById('major-result').innerHTML = `
     <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span class="b b-blue">Based on: ${P.name||'your profile'}</span>
-      ${P.work ? `<span class="b b-gray">${P.work}</span>` : ''}
-      ${P.goal ? `<span class="b b-gold">Goal: ${P.goal}</span>` : ''}
-      ${P.specialization ? `<span class="b b-purple">Target: ${P.specialization}</span>` : ''}
+      <span class="b b-blue">Based on: ${escapeHtml(P.name||'your profile')}</span>
+      ${P.work ? `<span class="b b-gray">${escapeHtml(P.work)}</span>` : ''}
+      ${P.goal ? `<span class="b b-gold">Goal: ${escapeHtml(P.goal)}</span>` : ''}
+      ${P.specialization ? `<span class="b b-purple">Target: ${escapeHtml(P.specialization)}</span>` : ''}
     </div>
     <div style="padding:14px;background:var(--c7);border-radius:var(--r);border-left:3px solid var(--blue)">
-      <div style="font-size:13px;color:var(--c2);line-height:1.8;white-space:pre-wrap">${reply}</div>
+      <div style="font-size:13px;color:var(--c2);line-height:1.8;white-space:pre-wrap">${escapeHtml(reply)}</div>
     </div>`;
 
   } catch(e) {
@@ -3688,7 +3688,7 @@ let pomInterval = null, pomSecs = 25*60, pomTotal = 25*60, pomRunning = false;
 const POM_DATA_KEY = 'avinya_pom';
 
 function pomLoad() {
-  const d = JSON.parse(localStorage.getItem(POM_DATA_KEY) || '{"sessions":[],"streak":0,"lastDate":""}');
+  const d = safeParse(localStorage.getItem(POM_DATA_KEY), '{"sessions":[],"streak":0,"lastDate":""}');
   const today = new Date().toDateString();
   if (d.lastDate !== today) {
     // New day — check streak
@@ -3860,7 +3860,7 @@ const MCQ_HIST_KEY = 'avinya_mcq_history';
 let mcqWrongTopics = []; // track wrong answers for adaptive retry
 
 function _origSaveMCQBase(sub, correct, total, wrongs) {
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]');
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]');
   hist.unshift({ sub, correct, total, pct: Math.round(correct/total*100), date: new Date().toLocaleDateString(), wrongs });
   if (hist.length > 50) hist.pop();
   localStorage.setItem(MCQ_HIST_KEY, JSON.stringify(hist));
@@ -3871,7 +3871,7 @@ function _origSaveMCQBase(sub, correct, total, wrongs) {
 function renderMCQStreak() {
   const bar = document.getElementById('mcq-streak-bar');
   if (!bar) return;
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]');
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]');
   if (!hist.length) { bar.innerHTML = ''; return; }
   bar.innerHTML = '<span style="font-size:11px;color:var(--c3);margin-right:4px">Recent:</span>' +
     hist.slice(0,10).map(h => {
@@ -4000,7 +4000,7 @@ Rules for valid JSON:
 async function genMCQFromHistory() {
   try {
 
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]');
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]');
   const wrongEntries = hist.filter(h => h.pct < 70 && h.wrongs && h.wrongs.length);
   if (!wrongEntries.length) { genMCQ(); return; }
 
@@ -4309,7 +4309,7 @@ function clearIQChat() {
 
 // ── 6. PLACEMENT TRACKER ──────────────────────────────────
 const PL_KEY = 'avinya_placements';
-let placements = JSON.parse(localStorage.getItem(PL_KEY) || '[]');
+let placements = safeParse(localStorage.getItem(PL_KEY), '[]');
 
 function addPlacement() {
   const f = document.getElementById('place-form');
@@ -4545,7 +4545,7 @@ function renderMilestones() {
 const GOALS_KEY = 'avinya_goals';
 const WB_KEY    = 'avinya_wellbeing';
 
-function loadGoals() { return JSON.parse(localStorage.getItem(GOALS_KEY)||'[]'); }
+function loadGoals() { return safeParse(localStorage.getItem(GOALS_KEY), '[]'); }
 function saveGoals(g) { localStorage.setItem(GOALS_KEY, JSON.stringify(g)); }
 
 function addGoal() {
@@ -4579,7 +4579,7 @@ function renderGoals() {
 }
 
 function logWellbeing(score) {
-  const log = JSON.parse(localStorage.getItem(WB_KEY)||'[]');
+  const log = safeParse(localStorage.getItem(WB_KEY), '[]');
   log.unshift({score, date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString()});
   if (log.length > 30) log.pop();
   localStorage.setItem(WB_KEY, JSON.stringify(log));
@@ -4601,7 +4601,7 @@ function logWellbeing(score) {
 const MEM_KEY = 'avinya_history';
 
 function saveToHistory(question, answer) {
-  const hist = JSON.parse(localStorage.getItem(MEM_KEY)||'[]');
+  const hist = safeParse(localStorage.getItem(MEM_KEY), '[]');
   hist.unshift({q:question.slice(0,80), a:answer.slice(0,200), date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString()});
   if (hist.length > 20) hist.pop();
   localStorage.setItem(MEM_KEY, JSON.stringify(hist));
@@ -4611,7 +4611,7 @@ function saveToHistory(question, answer) {
 function renderHistory() {
   const el = document.getElementById('history-list');
   if (!el) return;
-  const hist = JSON.parse(localStorage.getItem(MEM_KEY)||'[]');
+  const hist = safeParse(localStorage.getItem(MEM_KEY), '[]');
   if (!hist.length) { el.textContent = 'No saved conversations yet. AI responses are automatically saved here.'; return; }
   el.innerHTML = hist.slice(0,10).map(h=>`
     <div style="padding:10px;border:1px solid var(--c5);border-radius:var(--r);margin-bottom:7px;background:var(--c7);cursor:pointer" onclick="reaskQuestion('${h.q.replace(/'/g,"\\'")}')">
@@ -4644,7 +4644,7 @@ function addRating(msgDiv, q) {
 }
 
 function rateResponse(btn, type, q) {
-  const ratings = JSON.parse(localStorage.getItem('avinya_ratings')||'[]');
+  const ratings = safeParse(localStorage.getItem('avinya_ratings'), '[]');
   ratings.push({type, q, date: new Date().toISOString()});
   localStorage.setItem('avinya_ratings', JSON.stringify(ratings));
   btn.closest('.rate-row').innerHTML = `<span style="font-size:11px;color:var(--green)">✓ Thanks for the feedback!</span>`;
@@ -4927,13 +4927,13 @@ Format as a clean list with clear sections. Use real current data.`;
 
     if (!reply || reply.startsWith('⚠️')) {
       jlist.innerHTML = `<div style="font-size:12px;color:var(--c3);padding:10px 0">
-        ${reply || 'Could not load job data. Try refreshing.'}
+        ${escapeHtml(reply || 'Could not load job data. Try refreshing.')}
       </div>`;
       return;
     }
 
     jlist.innerHTML = `
-      <div style="font-size:13px;color:var(--c2);line-height:1.75;white-space:pre-wrap">${reply}</div>
+      <div style="font-size:13px;color:var(--c2);line-height:1.75;white-space:pre-wrap">${escapeHtml(reply)}</div>
       <div style="font-size:10px;color:var(--c3);margin-top:10px;padding-top:8px;border-top:1px solid var(--c6)">
         <span class="src src-li">🔗 LinkedIn · Indeed</span> · Live data via web search · ${new Date().toLocaleDateString('en-IN')}
       </div>`;
@@ -6062,7 +6062,7 @@ function computeMasteryScore(subjectKey) {
   const subj = MASTERY_SUBJECTS.find(s => s.key === subjectKey);
   if (!subj) return 50;
 
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]');
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]');
   const relevant = hist.filter(h => subj.courses.some(c => h.sub && h.sub.toLowerCase().includes(c.toLowerCase())));
 
   let score = 50; // base
@@ -6089,7 +6089,7 @@ function computeMasteryScore(subjectKey) {
   }
 
   // Boost for study time (Pomodoro sessions on this topic)
-  const pomData = JSON.parse(localStorage.getItem(POM_DATA_KEY) || '{"sessions":[]}');
+  const pomData = safeParse(localStorage.getItem(POM_DATA_KEY), '{"sessions":[]}');
   const pomBoost = pomData.sessions
     ? pomData.sessions.filter(s => subj.courses.some(c => (s.subject||'').toLowerCase().includes(c.toLowerCase().split(' ')[0]))).length * 2
     : 0;
@@ -6098,7 +6098,7 @@ function computeMasteryScore(subjectKey) {
 }
 
 function buildMasteryData() {
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]');
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]');
   const totalDataPts = hist.length;
   const scores = {};
   MASTERY_SUBJECTS.forEach(s => { scores[s.key] = computeMasteryScore(s.key); });
@@ -6251,7 +6251,7 @@ async function loadCohortData() {
 
   try {
     // Build difficulty insights from actual student quiz history
-    const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]');
+    const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]');
     if (hist.length < 3) {
       if (ld) ld.classList.remove('on');
       if (results) results.innerHTML =
@@ -6329,7 +6329,7 @@ async function shareToCohort() {
   try {
 
   const { scores } = buildMasteryData();
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]');
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]');
   if (!hist.length) {
     const el = document.getElementById('cohort-share-status');
     if (el) el.textContent = 'Complete some quizzes first to share data';
@@ -6490,10 +6490,10 @@ function buildSessionAwareBriefing() {
   const sorted = MASTERY_SUBJECTS.map(s => ({...s, score: scores[s.key]})).sort((a,b)=>a.score-b.score);
   const weakest = sorted[0];
   const focusEl = document.getElementById('brief-focus');
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]');
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]');
   const recentTopics = hist.slice(0,3).map(h=>h.sub).filter(Boolean);
   if (focusEl) {
-    const pomData = JSON.parse(localStorage.getItem(POM_DATA_KEY) || '{"sessions":[]}');
+    const pomData = safeParse(localStorage.getItem(POM_DATA_KEY), '{"sessions":[]}');
     const todaySessions = (pomData.sessions||[]).filter(s => s.date === today.toDateString());
     const studyMins = todaySessions.reduce((a,s)=>a+s.mins,0);
     if (studyMins > 0) {
@@ -6582,8 +6582,8 @@ function addVoiceButtons() {
 
 // ── M4. WEEKLY STUDY DIGEST ───────────────────────────────
 function buildWeeklyDigest() {
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]');
-  const pom  = JSON.parse(localStorage.getItem(POM_DATA_KEY) || '{"sessions":[]}');
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]');
+  const pom  = safeParse(localStorage.getItem(POM_DATA_KEY), '{"sessions":[]}');
   const { scores } = typeof buildMasteryData === 'function' ? buildMasteryData() : { scores: {} };
 
   const now  = new Date();
@@ -6701,7 +6701,7 @@ function scheduleWeeklyDigestReminder() {
 // ── M5. PER-COURSE NOTES SYSTEM ───────────────────────────
 
 function getNotes() {
-  try { return JSON.parse(localStorage.getItem(NOTES_KEY) || '{}'); } catch(e) { return {}; }
+  try { return safeParse(localStorage.getItem(NOTES_KEY), '{}'); } catch(e) { return {}; }
 }
 
 function _saveNote_base(courseKey, text) {
@@ -6960,7 +6960,7 @@ const MEMORY_KEY = 'avinya_memory_log';
 const MAX_MEMORY_ENTRIES = 100;
 
 function logMemory(type, content, metadata) {
-  const mem = JSON.parse(localStorage.getItem(MEMORY_KEY) || '[]');
+  const mem = safeParse(localStorage.getItem(MEMORY_KEY), '[]');
   mem.unshift({
     type,          // 'quiz', 'note', 'chat', 'session', 'problem'
     content: content.slice(0, 300),
@@ -6973,7 +6973,7 @@ function logMemory(type, content, metadata) {
 }
 
 function getMemoryContext(query) {
-  const mem = JSON.parse(localStorage.getItem(MEMORY_KEY) || '[]');
+  const mem = safeParse(localStorage.getItem(MEMORY_KEY), '[]');
   if (!mem.length) return '';
   const q = query.toLowerCase();
   const relevant = mem
@@ -6987,7 +6987,7 @@ function getMemoryContext(query) {
 function renderMemoryTimeline(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
-  const mem = JSON.parse(localStorage.getItem(MEMORY_KEY) || '[]');
+  const mem = safeParse(localStorage.getItem(MEMORY_KEY), '[]');
   if (!mem.length) {
     el.innerHTML = '<div style="color:var(--c3);font-size:12px;padding:12px">No activity recorded yet. Complete quizzes, take notes, and chat with AI to build your memory log.</div>';
     return;
@@ -7008,7 +7008,7 @@ function renderPerformanceChart(canvasId) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]').slice(0,14).reverse();
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]').slice(0,14).reverse();
   if (hist.length < 2) {
     ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink3') || '#888';
     ctx.font = '13px DM Sans, sans-serif';
@@ -7282,7 +7282,7 @@ STRICT RULES — you MUST follow these:
   bioEl.dataset.loaded = '1';
 
   if (reply.startsWith('⚠️')) {
-    bioEl.innerHTML = `<div style="font-size:12px;color:var(--red);padding:8px">${reply}</div>`;
+    bioEl.innerHTML = `<div style="font-size:12px;color:var(--red);padding:8px">${escapeHtml(reply)}</div>`;
     return;
   }
 
@@ -7292,7 +7292,7 @@ STRICT RULES — you MUST follow these:
         <span style="font-size:11px;font-weight:600;color:var(--c1);text-transform:uppercase;letter-spacing:.6px">AI-Enhanced Profile</span>
         <span class="b b-blue" style="font-size:10px">🔍 Web Search</span>
       </div>
-      <div style="font-size:13px;color:var(--c2);line-height:1.75;white-space:pre-wrap">${reply}</div>
+      <div style="font-size:13px;color:var(--c2);line-height:1.75;white-space:pre-wrap">${escapeHtml(reply)}</div>
     </div>`;
 
   } catch(e) {
@@ -7434,7 +7434,7 @@ Format for quick exam reference.`
 
     if (reply.startsWith('⚠️')) {
       if (outEl) outEl.innerHTML = `<div style="padding:12px;background:var(--red-bg);border-radius:var(--r2);border-left:3px solid var(--red);font-size:13px;line-height:1.7">
-        ${reply}<br><span style="font-size:11px;opacity:.7">If the proxy is waking up, wait 30 seconds and try again.</span>
+        ${escapeHtml(reply)}<br><span style="font-size:11px;opacity:.7">If the proxy is waking up, wait 30 seconds and try again.</span>
       </div>`;
       return;
     }
@@ -7454,12 +7454,12 @@ Format for quick exam reference.`
           <button class="btn btn-o btn-sm" onclick="docExport()">⬇ Export</button>
         </div>
       </div>
-      <div id="doc-result" style="font-size:13px;color:var(--c2);line-height:1.75;white-space:pre-wrap;padding:14px;background:var(--c7);border-radius:var(--r2);border-left:3px solid var(--acc)">${reply}</div>`;
+      <div id="doc-result" style="font-size:13px;color:var(--c2);line-height:1.75;white-space:pre-wrap;padding:14px;background:var(--c7);border-radius:var(--r2);border-left:3px solid var(--acc)">${escapeHtml(reply)}</div>`;
 
   } catch(e) {
     if (ldEl)  ldEl.classList.remove('on');
     if (btnEl) btnEl.disabled = false;
-    if (outEl) outEl.innerHTML = `<div style="padding:12px;background:var(--red-bg);border-radius:var(--r2);border-left:3px solid var(--red);font-size:13px">⚠️ ${e.message}</div>`;
+    if (outEl) outEl.innerHTML = `<div style="padding:12px;background:var(--red-bg);border-radius:var(--r2);border-left:3px solid var(--red);font-size:13px">⚠️ ${escapeHtml(e.message)}</div>`;
     console.error('Document processing failed:', e);
   }
 }
@@ -7467,7 +7467,7 @@ Format for quick exam reference.`
 function docSaveAsNote() {
   if (!window._docLastResult) { alert('No result to save yet.'); return; }
   const { reply, file, courseCode } = window._docLastResult;
-  const notes = JSON.parse(localStorage.getItem('avinya_notes_v2') || '{}');
+  const notes = safeParse(localStorage.getItem('avinya_notes_v2'), '{}');
   const key   = courseCode || 'general';
   const existing = notes[key] || '';
   notes[key] = existing
@@ -7506,9 +7506,9 @@ async function generateAdaptivePlan() {
   if (ld) ld.classList.add('on');
   el.innerHTML = '';
 
-  const hist = JSON.parse(localStorage.getItem(typeof MCQ_HIST_KEY!=='undefined'?MCQ_HIST_KEY:'avinya_mcq_history')||'[]');
-  const pom  = JSON.parse(localStorage.getItem(typeof POM_DATA_KEY!=='undefined'?POM_DATA_KEY:'avinya_pom')||'{}');
-  const prof = JSON.parse(localStorage.getItem('avinya_profile_v2')||'{}');
+  const hist = safeParse(localStorage.getItem(typeof MCQ_HIST_KEY!=='undefined'?MCQ_HIST_KEY:'avinya_mcq_history'), '[]');
+  const pom  = safeParse(localStorage.getItem(typeof POM_DATA_KEY!=='undefined'?POM_DATA_KEY:'avinya_pom'), '{}');
+  const prof = safeParse(localStorage.getItem('avinya_profile_v2'), '{}');
 
   const scores = {};
   hist.forEach(h=>{ if(!scores[h.sub])scores[h.sub]=[]; scores[h.sub].push(h.pct||0); });
@@ -7552,7 +7552,7 @@ Be specific and direct. Reference actual DoMS IITR course names.`;
   if (ld) ld.classList.remove('on');
 
   el.innerHTML = `
-    <div style="font-size:13px;color:var(--c2);line-height:1.75;white-space:pre-wrap">${reply}</div>
+    <div style="font-size:13px;color:var(--c2);line-height:1.75;white-space:pre-wrap">${escapeHtml(reply)}</div>
     <div style="margin-top:12px;display:flex;gap:7px">
       <button class="btn btn-p btn-sm" onclick="generateAdaptivePlan()">🔄 Refresh Plan</button>
     </div>`;
@@ -7563,8 +7563,8 @@ Be specific and direct. Reference actual DoMS IITR course names.`;
 }
 
 function initAdaptiveDashboard() {
-  const hist = JSON.parse(localStorage.getItem(typeof MCQ_HIST_KEY!=='undefined'?MCQ_HIST_KEY:'avinya_mcq_history')||'[]');
-  const pom  = JSON.parse(localStorage.getItem(typeof POM_DATA_KEY!=='undefined'?POM_DATA_KEY:'avinya_pom')||'{}');
+  const hist = safeParse(localStorage.getItem(typeof MCQ_HIST_KEY!=='undefined'?MCQ_HIST_KEY:'avinya_mcq_history'), '[]');
+  const pom  = safeParse(localStorage.getItem(typeof POM_DATA_KEY!=='undefined'?POM_DATA_KEY:'avinya_pom'), '{}');
   const el   = document.getElementById('adapt-quick-stats');
   if (!el) return;
 
@@ -7959,7 +7959,7 @@ let _noteTimer = null;
 
 function loadNote(key) {
   _noteKey = key || 'general';
-  const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '{}');
+  const notes = safeParse(localStorage.getItem(NOTES_KEY), '{}');
   const ed = document.getElementById('note-editor');
   const st = document.getElementById('note-saved-status');
   if (ed) ed.value = notes[_noteKey] || '';
@@ -7971,7 +7971,7 @@ function autoSaveNote() {
   _noteTimer = setTimeout(() => {
     const ed = document.getElementById('note-editor');
     if (!ed) return;
-    const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '{}');
+    const notes = safeParse(localStorage.getItem(NOTES_KEY), '{}');
     notes[_noteKey] = ed.value;
     localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
     const st = document.getElementById('note-saved-status');
@@ -8069,7 +8069,7 @@ async function loadMBANews(force = false) {
 
   // Read student profile for personalisation
   let P2 = {};
-  try { P2 = JSON.parse(localStorage.getItem('avinya_profile_v2') || '{}'); } catch(e){ console.warn("[Avinya] caught:", e.message); }
+  try { P2 = safeParse(localStorage.getItem('avinya_profile_v2'), '{}'); } catch(e){ console.warn("[Avinya] caught:", e.message); }
   const spec = P2.specialization || P2.spec || '';
   const name = P2.name?.split(' ')[0] || '';
 
@@ -8093,7 +8093,7 @@ async function loadMBANews(force = false) {
   // Serve from cache if fresh (2 hours) AND matches current spec
   if (!force) {
     try {
-      const cached = JSON.parse(localStorage.getItem(NEWS_CACHE_KEY) || 'null');
+      const cached = safeParse(localStorage.getItem(NEWS_CACHE_KEY), 'null');
       if (cached && Date.now()-cached.ts < NEWS_CACHE_TTL
           && cached.items?.length && cached.spec === spec) {
         renderNews(cached.items, spec); return;
@@ -8251,7 +8251,7 @@ const SR_KEY = 'avinya_sr_deck';
 
 // ── Spaced Repetition (SM-2 algorithm) ──────────────────────────
 function getSRDeck() {
-  try { return JSON.parse(localStorage.getItem(SR_KEY) || '[]'); } catch(_) { return []; }
+  try { return safeParse(localStorage.getItem(SR_KEY), '[]'); } catch(_) { return []; }
 }
 function _saveSRDeck_base(deck) {
   localStorage.setItem(SR_KEY, JSON.stringify(deck));
@@ -8307,7 +8307,7 @@ function autoAddToSR(subject, wrongs) {
 
 // ── Core metric calculations ─────────────────────────────────────
 function calcSubjectMetrics() {
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]');
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]');
   const subjectMap = {};
 
   hist.forEach(h => {
@@ -8350,7 +8350,7 @@ function calcSubjectMetrics() {
 }
 
 function getOverallMetrics() {
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]');
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]');
   if (!hist.length) return null;
   const total  = hist.reduce((a,h)=>a+(h.total||5),0);
   const correct= hist.reduce((a,h)=>a+(h.correct||0),0);
@@ -8649,7 +8649,7 @@ function renderF1Bars(metrics) {
 function renderBloomBars() {
   const el = document.getElementById('bloom-bars');
   if (!el) return;
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]');
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]');
   // Infer Bloom levels from score ranges (heuristic based on question difficulty)
   const levels = [
     { name:'Remember',     icon:'💾', pct: hist.filter(h=>h.pct>=90).length },
@@ -8794,7 +8794,7 @@ function pShow(tab) {
 
 // ── Quiz from weak areas ──────────────────────────────────────
 function genQuizFromWeak() {
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY)||'[]');
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]');
   if (!hist.length) { alert('Take at least one quiz first to identify weak areas.'); return; }
   // Find subject with lowest average score
   const subMap = {};
@@ -9235,6 +9235,18 @@ function escapeHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// Parses a localStorage value, falling back to `defaultJsonStr` (a JSON
+// string, matching how call sites used to write `JSON.parse(raw || '[]')`)
+// if the stored value is missing or corrupted, instead of throwing.
+function safeParse(raw, defaultJsonStr) {
+  try {
+    return JSON.parse(raw != null ? raw : defaultJsonStr);
+  } catch (e) {
+    console.warn('[Avinya] Corrupted localStorage value, using default:', e.message);
+    try { return JSON.parse(defaultJsonStr); } catch (_) { return null; }
+  }
+}
+
 const SB_SETUP_SQL = `-- Run once in Supabase SQL Editor (Dashboard → SQL Editor → New query)
 
 create table if not exists avinya_student_data (
@@ -9518,7 +9530,7 @@ let _vaultSource = null;       // set by feature functions to label vault entrie
 
 function vaultSave(source, userMsg, systemPrompt, fullMessages, response, inputTokens, outputTokens, mcpMeta) {
   try {
-    const vault = JSON.parse(localStorage.getItem(VAULT_KEY) || '[]');
+    const vault = safeParse(localStorage.getItem(VAULT_KEY), '[]');
     vault.unshift({
       id:         Date.now(),
       ts:         new Date().toISOString(),
@@ -9540,7 +9552,7 @@ function vaultSave(source, userMsg, systemPrompt, fullMessages, response, inputT
 }
 
 function vaultLoad() {
-  try { return JSON.parse(localStorage.getItem(VAULT_KEY) || '[]'); } catch(_) { return []; }
+  try { return safeParse(localStorage.getItem(VAULT_KEY), '[]'); } catch(_) { return []; }
 }
 
 function vaultClear() {
@@ -9815,7 +9827,7 @@ function nnExtractFeatures(hist) {
 
 async function nnTrain() {
   if (!window.tf) return;
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || "[]");
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), "[]");
   if (hist.length < 5) return;
   const features = nnExtractFeatures(hist);
   const subjects = Object.keys(features);
@@ -9858,7 +9870,7 @@ async function nnPredict() {
   if (!window.tf) return {};
   if (!_nnTrained && !(await nnLoad())) { await nnTrain(); }
   if (!_nnModel) return {};
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || "[]");
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), "[]");
   if (hist.length < 3) return {};
   const features = nnExtractFeatures(hist);
   const subjects = Object.keys(features);
@@ -9896,7 +9908,7 @@ async function renderNNInsights() {
     renderNNInsightsFallback(el);
     return;
   }
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || "[]");
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), "[]");
   if (hist.length < 2) {
     el.innerHTML = '<div style="font-size:12px;color:var(--c3)">Take at least 2 quizzes to see weakness predictions.</div>';
     return;
@@ -10518,7 +10530,7 @@ async function crowdShareDoc() {
 
   // 1. Always save locally
   try {
-    const loc = JSON.parse(localStorage.getItem(CROWD_LOCAL_KEY) || '[]');
+    const loc = safeParse(localStorage.getItem(CROWD_LOCAL_KEY), '[]');
     localStorage.setItem(CROWD_LOCAL_KEY, JSON.stringify([entry, ...loc].slice(0, 30)));
   } catch(_) {}
 
@@ -10563,7 +10575,7 @@ async function crowdLoadLibrary() {
     + (_crowdView === 'local' ? 'background:var(--brand,#1B2A4A);color:#fff' : 'background:var(--c8);color:var(--c3)')
     + '">\uD83D\uDCF1 My Uploads</button></div>';
   if (_crowdView === 'local') {
-    const entries = JSON.parse(localStorage.getItem(CROWD_LOCAL_KEY) || '[]');
+    const entries = safeParse(localStorage.getItem(CROWD_LOCAL_KEY), '[]');
     el.innerHTML = tabHtml + (entries.length
       ? renderCrowdEntries(entries, true)
       : '<div style="color:var(--c3);font-size:12px;text-align:center;padding:16px 0">No uploads yet</div>');
@@ -10626,12 +10638,14 @@ function renderCrowdEntries(entries, isLocal) {
 }
 
 function attachCrowdListeners(el) {
+  if (el._crowdListenerAttached) return; // container is re-rendered on every
+  el._crowdListenerAttached = true;      // refresh, but the listener should persist
   el.addEventListener('click', function handler(ev) {
     var del = ev.target.closest('[data-del]');
     if (del) { crowdDeleteEntry(Number(del.getAttribute('data-del'))); return; }
     var tog = ev.target.closest('[data-toggle]');
     if (tog) crowdToggle(Number(tog.getAttribute('data-toggle')), tog.getAttribute('data-fid'), tog);
-  }, { once: true });
+  });
 }
 
 function crowdToggle(id, fid, btn) {
@@ -10652,7 +10666,7 @@ function crowdToggle(id, fid, btn) {
 
 function crowdDeleteEntry(id) {
   try {
-    var entries = JSON.parse(localStorage.getItem(CROWD_LOCAL_KEY) || '[]')
+    var entries = safeParse(localStorage.getItem(CROWD_LOCAL_KEY), '[]')
       .filter(function(e){ return e.id !== id; });
     localStorage.setItem(CROWD_LOCAL_KEY, JSON.stringify(entries));
     crowdLoadLibrary();
@@ -10693,7 +10707,7 @@ function timeSince(ts) {
 
 
 function crowdExport() {
-  const entries = JSON.parse(localStorage.getItem(CROWD_LOCAL_KEY) || '[]');
+  const entries = safeParse(localStorage.getItem(CROWD_LOCAL_KEY), '[]');
   if (!entries.length) { alert('No entries to export yet.'); return; }
   const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -10711,7 +10725,7 @@ function crowdImport(event) {
     try {
       const imported = JSON.parse(e.target.result);
       if (!Array.isArray(imported)) { alert('Invalid library file.'); return; }
-      const existing = JSON.parse(localStorage.getItem(CROWD_LOCAL_KEY) || '[]');
+      const existing = safeParse(localStorage.getItem(CROWD_LOCAL_KEY), '[]');
       const existIds = new Set(existing.map(function(x){ return x.id; }));
       const newEntries = imported.filter(function(x){ return !existIds.has(x.id); });
       const merged = [...newEntries, ...existing].slice(0, 50);
@@ -10725,7 +10739,7 @@ function crowdImport(event) {
 
 // ── Pure-JS weakness predictor (runs when TF.js is unavailable) ──────────
 function renderNNInsightsFallback(el) {
-  const hist = JSON.parse(localStorage.getItem(MCQ_HIST_KEY) || '[]');
+  const hist = safeParse(localStorage.getItem(MCQ_HIST_KEY), '[]');
   if (hist.length < 1) { el.innerHTML = '<div style="font-size:12px;color:var(--c3)">Take a quiz to see weakness predictions.</div>'; return; }
 
   // Aggregate scores per subject
