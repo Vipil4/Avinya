@@ -1,0 +1,6 @@
+streamlit>=1.38
+anthropic>=0.69
+pydantic>=2.7
+python-dotenv>=1.0
+pypdf>=4.2
+pytest>=8.0

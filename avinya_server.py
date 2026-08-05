@@ -15,7 +15,7 @@ import os, json, urllib.request as ur
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 ANTHROPIC_KEY  = os.environ.get('ANTHROPIC_API_KEY', '')
-JB_MASTER_KEY  = os.environ.get('JSONBIN_MASTER_KEY', '$2a$10$jlXZ0xm4ZcyPlpGKq0dZ6Onuqq/p8ER4DJg694BzajdVbgOnJ20aG')
+JB_MASTER_KEY  = os.environ.get('JSONBIN_MASTER_KEY', '')
 PORT = int(os.environ.get('PORT', 8080))
 
 class Handler(BaseHTTPRequestHandler):
